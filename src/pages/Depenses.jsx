@@ -55,7 +55,8 @@ export default function Depenses() {
         if (attempts >= maxAttempts) {
           setError('Serveur indisponible. Cliquez sur "Réessayer".');
           setDepenses([]);
-          setTotal(0);
+          setTotal(Number(data.total) || 0);
+          
           setLoading(false);
           return;
         }
