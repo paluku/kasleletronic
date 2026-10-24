@@ -24,55 +24,47 @@ export default function Depenses() {
   });
 
   async function charger() {
-    setLoading(true);
-    setError('');
+  setLoading(true);
+  setError('');
 
-    let attempts = 0;
-    const maxAttempts = 3;
+  let attempts = 0;
+  const maxAttempts = 3;
 
-    while (attempts < maxAttempts) {
-      try {
-        const res = await fetch(`${API_URL}/api/depenses`, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
-        const data = await res.json();
+  while (attempts < maxAttempts) {
+    try {
+      const res = await fetch(`${API_URL}/api/depenses`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const data = await res.json();
 
-        // 🔍 LOG 1 — Voir ce que l'API renvoie
-        console.log('[DEBUG] RES OK:', res.ok, '| TOTAL REÇU:', data.total, '| TYPE:', typeof data.total);
+      console.log('[TEST] res.ok:', res.ok, '| data.total:', data.total);
 
-        if (res.ok) {
-          setDepenses(data.depenses || []);
-          setTotal(Number(data.total) || 0);
-          setLoading(false);
-          return;
-        }
-
-        throw new Error(data.error || `Erreur ${res.status}`);
-      } catch (e) {
-        attempts++;
-        console.log(`[DEBUG] Tentative ${attempts}/${maxAttempts} échouée :`, e.message);
-
-        if (attempts >= maxAttempts) {
-          setError('Serveur indisponible. Cliquez sur "Réessayer".');
-          setDepenses([]);
-          setTotal(Number(data.total) || 0);
-          
-          setLoading(false);
-          return;
-        }
-
-        await new Promise((r) => setTimeout(r, 5000));
+      if (res.ok) {
+        // ✅ SUCCÈS — c'est ici qu'on met les vraies données
+        setDepenses(data.depenses || []);
+        setTotal(Number(data.total) || 0);
+        setLoading(false);
+        return;   // ← on sort, plus rien après
       }
+
+      throw new Error(data.error || `Erreur ${res.status}`);
+    } catch (e) {
+      attempts++;
+      console.log(`[TEST] Tentative ${attempts}/${maxAttempts} :`, e.message);
+
+      if (attempts >= maxAttempts) {
+        // ❌ ÉCHEC FINAL — on vide tout
+        setError('Serveur indisponible. Cliquez sur "Réessayer".');
+        setDepenses([]);
+        setTotal(0);           // ← ici c'est 0, c'est correct
+        setLoading(false);
+        return;
+      }
+
+      await new Promise((r) => setTimeout(r, 5000));
     }
   }
-
-  useEffect(() => {
-    // 🔍 LOG 2 — Voir si charger() est appelé
-    console.log('[DEBUG] useEffect | accessToken:', accessToken ? 'présent' : 'NULL');
-    if (accessToken) charger();
-    else console.log('[DEBUG] accessToken null → charger() NON appelé');
-  }, [accessToken]);
-
+}
   function ouvrirAjout() {
     const now = new Date();
     setEditing(null);
