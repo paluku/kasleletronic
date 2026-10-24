@@ -34,7 +34,8 @@ export default function Recettes() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Erreur');
       setRecettes(data.recettes || []);
-      setTotal(data.total ?? 0);
+       setTotal(Number(data.total) || 0);
+     
 
       // Dépenses (pour le solde net)
       const resD = await fetch(`${API_URL}/api/depenses`, {
