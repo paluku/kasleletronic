@@ -23,47 +23,54 @@ export default function Depenses() {
     montant: '', devise: 'CDF', description: '',
   });
 
-async function charger() {
-  setLoading(true);
-  setError('');
+  async function charger() {
+    setLoading(true);
+    setError('');
 
-  let attempts = 0;
-  const maxAttempts = 3;
+    let attempts = 0;
+    const maxAttempts = 3;
 
-  while (attempts < maxAttempts) {
-    try {
-      const res = await fetch(`${API_URL}/api/depenses`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      const data = await res.json();
+    while (attempts < maxAttempts) {
+      try {
+        const res = await fetch(`${API_URL}/api/depenses`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const data = await res.json();
 
-      // 🔍 LOG DE DEBUG — À SUPPRIMER APRÈS
-      console.log('RES OK:', res.ok, '| TOTAL REÇU:', data.total, '| TYPE:', typeof data.total);
+        // 🔍 LOG 1 — Voir ce que l'API renvoie
+        console.log('[DEBUG] RES OK:', res.ok, '| TOTAL REÇU:', data.total, '| TYPE:', typeof data.total);
 
-      if (res.ok) {
-        setDepenses(data.depenses || []);
-        setTotal(Number(data.total) || 0);
-        setLoading(false);
-        return;
+        if (res.ok) {
+          setDepenses(data.depenses || []);
+          setTotal(Number(data.total) || 0);
+          setLoading(false);
+          return;
+        }
+
+        throw new Error(data.error || `Erreur ${res.status}`);
+      } catch (e) {
+        attempts++;
+        console.log(`[DEBUG] Tentative ${attempts}/${maxAttempts} échouée :`, e.message);
+
+        if (attempts >= maxAttempts) {
+          setError('Serveur indisponible. Cliquez sur "Réessayer".');
+          setDepenses([]);
+          setTotal(0);
+          setLoading(false);
+          return;
+        }
+
+        await new Promise((r) => setTimeout(r, 5000));
       }
-
-      throw new Error(data.error || `Erreur ${res.status}`);
-    } catch (e) {
-      attempts++;
-      console.log(`Tentative ${attempts}/${maxAttempts} échouée :`, e.message);
-
-      if (attempts >= maxAttempts) {
-        setError('Serveur indisponible. Cliquez sur "Réessayer".');
-        setDepenses([]);
-        setTotal(0);
-        setLoading(false);
-        return;
-      }
-
-      await new Promise((r) => setTimeout(r, 5000));
     }
   }
-}
+
+  useEffect(() => {
+    // 🔍 LOG 2 — Voir si charger() est appelé
+    console.log('[DEBUG] useEffect | accessToken:', accessToken ? 'présent' : 'NULL');
+    if (accessToken) charger();
+    else console.log('[DEBUG] accessToken null → charger() NON appelé');
+  }, [accessToken]);
 
   function ouvrirAjout() {
     const now = new Date();
@@ -162,7 +169,7 @@ async function charger() {
         <div className="bg-white p-4 sm:p-5 rounded-xl shadow border-l-4 border-red-500">
           <div className="text-xs uppercase text-slate-500 font-semibold">Total dépensé</div>
           <div className="text-xl sm:text-2xl font-bold text-red-600">
-            − {(total ?? 0).toFixed(2)}
+            − {Number(total ?? 0).toFixed(2)}
           </div>
         </div>
       </div>
@@ -213,7 +220,7 @@ async function charger() {
                 </div>
                 <div className="flex items-baseline justify-between">
                   <div className="text-lg font-bold text-red-600">
-                    − {(d.montant ?? 0).toFixed(2)}
+                    − {Number(d.montant ?? 0).toFixed(2)}
                     <span className="text-xs text-amber-700 ml-1">{d.devise}</span>
                   </div>
                   {d.description && (
@@ -248,7 +255,7 @@ async function charger() {
                     <td className="px-4 py-3 text-slate-600">{d.date}</td>
                     <td className="px-4 py-3 text-slate-600">{d.heure}</td>
                     <td className="px-4 py-3 text-right font-mono text-red-600">
-                      − {(d.montant ?? 0).toFixed(2)}
+                      − {Number(d.montant ?? 0).toFixed(2)}
                     </td>
                     <td className="px-4 py-3">
                       <span className="bg-amber-100 text-amber-800 text-xs font-bold px-2 py-1 rounded-full">{d.devise}</span>
