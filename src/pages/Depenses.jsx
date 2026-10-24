@@ -26,21 +26,39 @@ export default function Depenses() {
   async function charger() {
     setLoading(true);
     setError('');
-    try {
-      const res = await fetch(`${API_URL}/api/depenses`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erreur');
 
-      setDepenses(data.depenses || []);
-      setTotal(data.total ?? 0);
-    } catch (e) {
-      setError(e.message);
-      setDepenses([]);
-      setTotal(0);
-    } finally {
-      setLoading(false);
+    let attempts = 0;
+    const maxAttempts = 3;
+
+    while (attempts < maxAttempts) {
+      try {
+        const res = await fetch(`${API_URL}/api/depenses`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          setDepenses(data.depenses || []);
+          setTotal(data.total ?? 0);
+          setLoading(false);
+          return;
+        }
+
+        throw new Error(data.error || `Erreur ${res.status}`);
+      } catch (e) {
+        attempts++;
+        console.log(`Tentative ${attempts}/${maxAttempts} échouée :`, e.message);
+
+        if (attempts >= maxAttempts) {
+          setError('Serveur indisponible. Cliquez sur "Réessayer".');
+          setDepenses([]);
+          setTotal(0);
+          setLoading(false);
+          return;
+        }
+
+        await new Promise((r) => setTimeout(r, 5000));
+      }
     }
   }
 
@@ -151,8 +169,14 @@ export default function Depenses() {
       </div>
 
       {error && (
-        <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-3 rounded mb-4 text-sm">
-          {error}
+        <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-3 rounded mb-4 text-sm flex items-center justify-between gap-3">
+          <span>{error}</span>
+          <button
+            onClick={charger}
+            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap"
+          >
+            🔄 Réessayer
+          </button>
         </div>
       )}
 
