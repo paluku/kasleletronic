@@ -23,48 +23,47 @@ export default function Depenses() {
     montant: '', devise: 'CDF', description: '',
   });
 
-  async function charger() {
-    setLoading(true);
-    setError('');
+async function charger() {
+  setLoading(true);
+  setError('');
 
-    let attempts = 0;
-    const maxAttempts = 3;
+  let attempts = 0;
+  const maxAttempts = 3;
 
-    while (attempts < maxAttempts) {
-      try {
-        const res = await fetch(`${API_URL}/api/depenses`, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
-        const data = await res.json();
+  while (attempts < maxAttempts) {
+    try {
+      const res = await fetch(`${API_URL}/api/depenses`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const data = await res.json();
 
-        if (res.ok) {
-          setDepenses(data.depenses || []);
-          setTotal(data.total ?? 0);
-          setLoading(false);
-          return;
-        }
+      // 🔍 LOG DE DEBUG — À SUPPRIMER APRÈS
+      console.log('RES OK:', res.ok, '| TOTAL REÇU:', data.total, '| TYPE:', typeof data.total);
 
-        throw new Error(data.error || `Erreur ${res.status}`);
-      } catch (e) {
-        attempts++;
-        console.log(`Tentative ${attempts}/${maxAttempts} échouée :`, e.message);
-
-        if (attempts >= maxAttempts) {
-          setError('Serveur indisponible. Cliquez sur "Réessayer".');
-          setDepenses([]);
-          setTotal(0);
-          setLoading(false);
-          return;
-        }
-
-        await new Promise((r) => setTimeout(r, 5000));
+      if (res.ok) {
+        setDepenses(data.depenses || []);
+        setTotal(Number(data.total) || 0);
+        setLoading(false);
+        return;
       }
+
+      throw new Error(data.error || `Erreur ${res.status}`);
+    } catch (e) {
+      attempts++;
+      console.log(`Tentative ${attempts}/${maxAttempts} échouée :`, e.message);
+
+      if (attempts >= maxAttempts) {
+        setError('Serveur indisponible. Cliquez sur "Réessayer".');
+        setDepenses([]);
+        setTotal(0);
+        setLoading(false);
+        return;
+      }
+
+      await new Promise((r) => setTimeout(r, 5000));
     }
   }
-
-  useEffect(() => {
-    if (accessToken) charger();
-  }, [accessToken]);
+}
 
   function ouvrirAjout() {
     const now = new Date();
